@@ -23,9 +23,10 @@ int main(int argc, char *argv[]) {
         fclose(input);
         exit(2);
     }
-    char line[STR_SIZE];
-    while (fgets(line, STR_SIZE, input) != NULL) {
-        fprintf(output, "%s", line);
+    char symbol = fgetc(input);
+    while (symbol != EOF) {
+        fprintf(output, "%c", symbol);
+        symbol = fgetc(input);
     }
     fclose(input);
     fclose(output);
