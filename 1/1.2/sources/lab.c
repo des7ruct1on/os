@@ -86,16 +86,18 @@ status_code_register find_user(Node* list, const char* log, int pin) {
     return code_register_non_authorized;
 }
 
-status_code make_sanctions(Node* list, const char* log, int number) {
+status_code make_sanctions(Node* list, const char* log, char* number) {
     if (strlen(log) > 6) {
         printf("%s\n", log);
         return code_invalid_parametr;
     }
+    int number_sanctions;
+    sscanf(number, "%d", &number_sanctions);
     Node* current = list;
     while (current != NULL) {
         User *user = &(current->data);  // Получаем указатель на данные в списке
         if (!strcmp(user->login, log)) {
-            user->sanctions = number;  // Изменяем данные в списке
+            user->sanctions = number_sanctions;  // Изменяем данные в списке
             return code_succes;
         }
         current = current->next;

@@ -7,15 +7,55 @@
 #include <time.h>
 #include "headers/lab.h"
 
+status_code read_lexems_sanctions(const char* input, char** user_login, int* num_suntions) {
+    (*user_login) = (char*)malloc(STR_SIZE * sizeof(char));
+    if (*user_login == NULL) {
+        return code_error_malloc;
+    }
+
+    char cmd[STR_SIZE];  // Добавим массив для хранения cmd
+    if (!sscanf(input, "%s %s %d", cmd, *user_login, num_suntions)) {
+        free(*user_login);
+        return code_invalid_parametr;
+    }
+
+    // Теперь скопируем cmd в user_login
+    strcpy(*user_login, cmd);
+
+    return code_succes;
+}
+
+
+status_code read_lexems_date(const char* input, char** flag, char** time) {
+    char* cmd;
+    (*time) = (char*)malloc(STR_SIZE * sizeof(char));
+    if (*time == NULL) {
+        return code_error_malloc;
+    }
+    (*flag) = (char*)malloc(3 * sizeof(char));
+    if (*flag == NULL) {
+        return code_error_malloc;
+    }
+    if (!sscanf(input, "%s %s %s", cmd, *time, *flag)) {
+        free(*flag);
+        free(*time);
+        return code_invalid_parametr;
+    }
+    printf("%s-----%s------%s", input, *flag, *time);
+    return code_succes;
+
+}
+
 int main(int argc, char *argv[]) {
     Node* storage = NULL;
     bool authorized = false;
     int pincode, number_sanctions;
     char login[6];
     char choose[STR_SIZE];
-    char cmd[STR_SIZE];
-    char time[STR_SIZE];
     User* _user;
+    char cmd[STR_SIZE];
+    char input_arg2[STR_SIZE];
+    char input_arg3[STR_SIZE];
     int counter_procedures = 0;
     while (true) {
         if (!authorized) {
@@ -85,39 +125,26 @@ int main(int argc, char *argv[]) {
                 authorized = false;
                 continue;
             } else {
-                if (get_sanctions(_user) != 0) {
-                    counter_procedures++;
-                }
-                sscanf(choose, "%s", cmd);
-                getchar();
+                sscanf(choose, "%s %s %s ", cmd, input_arg2, input_arg3);
                 if (!strcmp(cmd, "Howmuch")) {
-                    char* flag;
-                    sscanf(choose, "%s %s", time, flag);
-                    //sscanf(choose, "%s", flag);
-                    status_code status_time = get_elapsed_time(time, flag);
+                    status_code status_time = get_elapsed_time(input_arg2, input_arg3);
                     if (status_time == code_invalid_parametr) {
                         printf("Invalid parameter detected!\n");
                     }
                     continue;
                 } else if (!strcmp(cmd, "Sanctions")) {
-                    char approve_value[STR_SIZE];
-                    sscanf(choose, "%s", login);
-                    printf("%s-\n", login);
-                    getchar();
-                    sscanf(choose, "%d", &number_sanctions);
-                    printf("%s-\n", login);
-                    getchar();
+                    int approve_value;
                     printf("Enter 12345 to accept sanctions: ");
-                    scanf("%s", approve_value);
+                    scanf("%d", &approve_value);
                     getchar();
-                    printf("%s----%d\n", login, number_sanctions);
-                    if (!strcmp(approve_value, "12345")) {
-                        switch (make_sanctions(storage, login, number_sanctions)) {
+                    printf("%s----%s\n", input_arg2, input_arg3);
+                    if (approve_value == 12345) {
+                        switch (make_sanctions(storage, input_arg2, input_arg3)) {
                             case code_invalid_parametr:
                                 printf("Invalid parameter detected!!!\n");
                                 break;
                             case code_succes:
-                                printf("Sanctions applied to the %s\n", login);
+                                printf("Sanctions applied to the %s\n", input_arg2);
                                 break;
                             default:
                                 break;
@@ -128,9 +155,9 @@ int main(int argc, char *argv[]) {
                     }
 
                 }
-            }
-
         }
+        }
+
     }
     return 0;
 }

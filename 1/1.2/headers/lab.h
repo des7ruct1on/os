@@ -40,7 +40,7 @@ status_code_register register_user(Node** head, User* person);
 status_code_register find_user(Node* list, const char* log, int pin);
 status_code destroy_storage(Node** head);
 status_code create_user(const char* log, int pin, User** person);
-status_code make_sanctions(Node* list, const char* log, int number);
+status_code make_sanctions(Node* list, const char* log, char* number);
 status_code get_elapsed_time(char *time_start, char *flag);
 void print_menu_non_authorized();
 void print_menu_authorized();
