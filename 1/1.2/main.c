@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
                     counter_procedures++;
                 }
                 sscanf(choose, "%s", cmd);
-                printf("%s %d\n", cmd, strlen(cmd));
+                getchar();
                 if (!strcmp(cmd, "Howmuch")) {
                     char* flag;
                     sscanf(choose, "%s %s", time, flag);
@@ -100,12 +100,18 @@ int main(int argc, char *argv[]) {
                     }
                     continue;
                 } else if (!strcmp(cmd, "Sanctions")) {
-                    int approve_value = 12345;
-                    sscanf(choose, "%s %d", login, &number_sanctions);
-                    printf("%s--\n", login);
+                    char approve_value[STR_SIZE];
+                    sscanf(choose, "%s", login);
+                    printf("%s-\n", login);
+                    getchar();
+                    sscanf(choose, "%d", &number_sanctions);
+                    printf("%s-\n", login);
+                    getchar();
                     printf("Enter 12345 to accept sanctions: ");
-                    //scanf("%d", &approve_value);
-                    if (approve_value == 12345) {
+                    scanf("%s", approve_value);
+                    getchar();
+                    printf("%s----%d\n", login, number_sanctions);
+                    if (!strcmp(approve_value, "12345")) {
                         switch (make_sanctions(storage, login, number_sanctions)) {
                             case code_invalid_parametr:
                                 printf("Invalid parameter detected!!!\n");
