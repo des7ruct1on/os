@@ -5,10 +5,9 @@ int get_sanctions(User* id) {
     
 }
 
-status_code_register register_user(Node** head, User* person) {
-    char* log = person->login;
-    int pin = person->pincode;
-    person->sanctions = 0;
+status_code_register register_user(Node** head, User** person) {
+    char* log = (*person)->login;
+    int pin = (*person)->pincode;
     status_code_register status_exist = find_user(*head, log, pin, person);
     switch (status_exist) {
         case code_register_authorized:
@@ -19,11 +18,13 @@ status_code_register register_user(Node** head, User* person) {
         default:
             break;
     }
+    //printf("123324324\n");
+    (*person)->sanctions = 0;
     Node* new_node = (Node*)malloc(sizeof(Node));
     if (new_node == NULL) {
         return code_error_malloc;
     }
-    new_node->data = person;
+    new_node->data = (*person);
     new_node->next = NULL;
 
     if (*head == NULL) {
@@ -48,6 +49,7 @@ status_code destroy_storage(Node** head) {
 
     while (current != NULL) {
         next = current->next;
+        free(current->data);
         free(current);
         current = next;
     }
@@ -70,7 +72,7 @@ status_code create_user(const char* log, int pin, User** person) {
     return code_succes;
 }
 
-status_code_register find_user(Node* list, const char* log, int pin, User* user) {
+status_code_register find_user(Node* list, const char* log, int pin, User** user) {
     if (strlen(log) > 6) {
         return code_register_invalid_parametr;
     }
@@ -80,7 +82,8 @@ status_code_register find_user(Node* list, const char* log, int pin, User* user)
         if (!strcmp(check->login, log) && check->pincode != pin) {
             return code_register_invalid_parametr;
         } else if (!strcmp(check->login, log) && check->pincode == pin) {
-            user = check;
+            free(*user);
+            *user = check;
             return code_register_authorized;
         }
         current = current->next;
@@ -88,18 +91,24 @@ status_code_register find_user(Node* list, const char* log, int pin, User* user)
     return code_register_non_authorized;
 }
 
-status_code make_sanctions(Node* list, const char* log, char* number) {
+status_code make_sanctions(Node* list, const char* log, char* number, User* user) {
     if (strlen(log) > 6) {
         return code_invalid_parametr;
     }
-
+    printf("%s %s %d\n", user->login, log, user->sanctions);
+    if (!strcmp(user->login, log) && user->sanctions != 0) {
+        return code_invalid_parametr;
+    }
     int number_sanctions;
     sscanf(number, "%d", &number_sanctions);
+    if (number_sanctions < 1) {
+        return code_invalid_parametr;
+    }
     Node* current = list;
     while (current != NULL) {
-        User* user = current->data;  // Получаем указатель на данные в списке
+        User* user = current->data;  
         if (!strcmp(user->login, log)) {
-            user->sanctions = number_sanctions;  // Изменяем данные в списке
+            user->sanctions = number_sanctions;  
             return code_succes;
         }
         current = current->next;
@@ -128,6 +137,8 @@ void print_menu_authorized() {
     printf("|----------------------------------------------------------|\n");
     printf("| Enter \"Sanctions username <number>\" to create sanctions|\n");
     printf("| on specified user with specified quantity                |\n");
+    printf("|----------------------------------------------------------|\n");
+    printf("| Enter \"Exit\" to shut down programm                     |\n");
     printf("|==========================================================|\n");
 }
 
@@ -194,4 +205,131 @@ status_code get_elapsed_time(char *time_start, char *flag) {
         printf("Elapsed time in years: %.4f\n", elapsed_seconds / (365.25 * 24 * 3600));
     }
     return code_succes;
+}
+
+status_free free_all(int count, ...) {
+    if (count < 1) {
+        return free_error;
+    }
+
+    va_list ptr;
+    va_start(ptr, count);
+
+    for (int i = 0; i < count; i++) {
+        void* ptr_to_free = va_arg(ptr, void*);
+        free(ptr_to_free);
+        ptr_to_free = NULL;
+    }
+
+    va_end(ptr);
+    return free_success;
+}
+
+status_cmd command(char** arg_one, char** arg_two) {
+    char* tmp_cmd = (char*)malloc(STR_SIZE * sizeof(char));
+    if (tmp_cmd == NULL) {
+        return code_error_malloc;
+    }
+    int index = 0;
+    char symbol_choose = getchar();
+    while(!isspace(symbol_choose)) {
+        tmp_cmd[index++] = symbol_choose;
+        symbol_choose = getchar();
+    }
+    tmp_cmd[index] = '\0';
+    index = 0;
+    if (!strcmp(tmp_cmd, "Time")) {
+        free(tmp_cmd);
+        return cmd_time;
+    } else if (!strcmp(tmp_cmd, "Date")) {
+        free(tmp_cmd);
+        return cmd_date;
+    } else if (!strcmp(tmp_cmd, "Exit")) {
+        free(tmp_cmd);
+        return cmd_exit;
+    } else if (!strcmp(tmp_cmd, "Howmuch")) {
+        free(tmp_cmd);
+        (*arg_one) = (char*)malloc(STR_SIZE * sizeof(char));
+        if (*arg_one == NULL) {
+            return code_error_malloc;
+        }
+        (*arg_two) = (char*)malloc(STR_SIZE * sizeof(char));
+        if (*arg_two == NULL) {
+            free(*arg_one);
+            return code_error_malloc;
+        }
+        while(isspace(symbol_choose)) {
+            symbol_choose = getchar();
+            if (symbol_choose == '\0') {
+                free(*arg_one);
+                free(*arg_two);
+                return cmd_invalid_parameter;
+            }
+        }
+        while(!isspace(symbol_choose)) {
+            (*arg_one)[index++] = symbol_choose;
+            symbol_choose = getchar();
+        }
+        (*arg_one)[index] = '\0';
+        index = 0;
+        while(isspace(symbol_choose)) {
+            symbol_choose = getchar();
+            if (symbol_choose == '\0') {
+                free(*arg_one);
+                free(*arg_two);
+                return cmd_invalid_parameter;
+            }
+        }
+        while(!isspace(symbol_choose)) {
+            (*arg_two)[index++] = symbol_choose;
+            symbol_choose = getchar();
+        }
+        (*arg_two)[index] = '\0';
+        return cmd_howmuch;
+    } else if (!strcmp(tmp_cmd, "Sanctions")) {
+        free(tmp_cmd);
+        (*arg_one) = (char*)malloc(STR_SIZE * sizeof(char));
+        if (*arg_one == NULL) {
+            return code_error_malloc;
+        }
+        (*arg_two) = (char*)malloc(STR_SIZE * sizeof(char));
+        if (*arg_two == NULL) {
+            free(*arg_one);
+            return code_error_malloc;
+        }
+        while(isspace(symbol_choose)) {
+            symbol_choose = getchar();
+            if (symbol_choose == '\0') {
+                free(*arg_one);
+                free(*arg_two);
+                return cmd_invalid_parameter;
+            }
+        }
+        while(!isspace(symbol_choose)) {
+            (*arg_one)[index++] = symbol_choose;
+            symbol_choose = getchar();
+        }
+        (*arg_one)[index] = '\0';
+        index = 0;
+        while(isspace(symbol_choose)) {
+            symbol_choose = getchar();
+            if (symbol_choose == '\0') {
+                free(*arg_one);
+                free(*arg_two);
+                return cmd_invalid_parameter;
+            }
+        }
+        while(!isspace(symbol_choose)) {
+            (*arg_two)[index++] = symbol_choose;
+            symbol_choose = getchar();
+        }
+        (*arg_two)[index] = '\0';
+        return cmd_sanctions;
+    } else if (!strcmp(tmp_cmd, "Logout")) {
+        free(tmp_cmd);
+        return cmd_logout;
+    } else {
+        free(tmp_cmd);
+        return cmd_invalid_parameter;
+    }
 }
