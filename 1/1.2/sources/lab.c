@@ -228,7 +228,7 @@ status_free free_all(int count, ...) {
 status_cmd command(char** arg_one, char** arg_two) {
     char* tmp_cmd = (char*)malloc(STR_SIZE * sizeof(char));
     if (tmp_cmd == NULL) {
-        return code_error_malloc;
+        return cmd_error_malloc;
     }
     int index = 0;
     char symbol_choose = getchar();
@@ -251,12 +251,12 @@ status_cmd command(char** arg_one, char** arg_two) {
         free(tmp_cmd);
         (*arg_one) = (char*)malloc(STR_SIZE * sizeof(char));
         if (*arg_one == NULL) {
-            return code_error_malloc;
+            return cmd_error_malloc;
         }
         (*arg_two) = (char*)malloc(STR_SIZE * sizeof(char));
         if (*arg_two == NULL) {
             free(*arg_one);
-            return code_error_malloc;
+            return cmd_error_malloc;
         }
         while(isspace(symbol_choose)) {
             symbol_choose = getchar();
@@ -290,12 +290,12 @@ status_cmd command(char** arg_one, char** arg_two) {
         free(tmp_cmd);
         (*arg_one) = (char*)malloc(STR_SIZE * sizeof(char));
         if (*arg_one == NULL) {
-            return code_error_malloc;
+            return cmd_error_malloc;
         }
         (*arg_two) = (char*)malloc(STR_SIZE * sizeof(char));
         if (*arg_two == NULL) {
             free(*arg_one);
-            return code_error_malloc;
+            return cmd_error_malloc;
         }
         while(isspace(symbol_choose)) {
             symbol_choose = getchar();
