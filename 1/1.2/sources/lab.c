@@ -8,7 +8,8 @@ int get_sanctions(User* id) {
 status_code_register register_user(Node** head, User* person) {
     char* log = person->login;
     int pin = person->pincode;
-    status_code_register status_exist = find_user(*head, log, pin);
+    person->sanctions = 0;
+    status_code_register status_exist = find_user(*head, log, pin, person);
     switch (status_exist) {
         case code_register_authorized:
             return status_exist;
@@ -22,7 +23,7 @@ status_code_register register_user(Node** head, User* person) {
     if (new_node == NULL) {
         return code_error_malloc;
     }
-    new_node->data = *person;
+    new_node->data = person;
     new_node->next = NULL;
 
     if (*head == NULL) {
@@ -69,16 +70,17 @@ status_code create_user(const char* log, int pin, User** person) {
     return code_succes;
 }
 
-status_code_register find_user(Node* list, const char* log, int pin) {
+status_code_register find_user(Node* list, const char* log, int pin, User* user) {
     if (strlen(log) > 6) {
         return code_register_invalid_parametr;
     }
     Node* current = list;
     while (current != NULL) {
-        User check = current->data;
-        if (!strcmp(check.login, log) && check.pincode != pin) {
+        User* check = current->data;
+        if (!strcmp(check->login, log) && check->pincode != pin) {
             return code_register_invalid_parametr;
-        } else if (!strcmp(check.login, log) && check.pincode == pin) {
+        } else if (!strcmp(check->login, log) && check->pincode == pin) {
+            user = check;
             return code_register_authorized;
         }
         current = current->next;
@@ -88,14 +90,14 @@ status_code_register find_user(Node* list, const char* log, int pin) {
 
 status_code make_sanctions(Node* list, const char* log, char* number) {
     if (strlen(log) > 6) {
-        printf("%s\n", log);
         return code_invalid_parametr;
     }
+
     int number_sanctions;
     sscanf(number, "%d", &number_sanctions);
     Node* current = list;
     while (current != NULL) {
-        User *user = &(current->data);  // Получаем указатель на данные в списке
+        User* user = current->data;  // Получаем указатель на данные в списке
         if (!strcmp(user->login, log)) {
             user->sanctions = number_sanctions;  // Изменяем данные в списке
             return code_succes;
@@ -104,6 +106,7 @@ status_code make_sanctions(Node* list, const char* log, char* number) {
     }
     return code_invalid_parametr;
 }
+
 
 void print_menu_non_authorized() {
     printf("\n|===============|Welcome to the programm!!!|===============|\n");
@@ -138,7 +141,6 @@ void get_time() {
     printf("Current time: %02d:%02d:%02d\n", time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
 }
 
-// Функция для выполнения команды Date
 void get_date() {
     time_t raw_time;
     struct tm *time_info;
@@ -149,15 +151,21 @@ void get_date() {
     printf("Current date: %02d:%02d:%04d\n", time_info->tm_mday, time_info->tm_mon + 1, time_info->tm_year + 1900);
 }
 
-// Функция для выполнения команды Howmuch
 status_code get_elapsed_time(char *time_start, char *flag) {
-    if (!strcmp(flag, "-s") || !strcmp(flag, "-m") || !strcmp(flag, "-h") || !strcmp(flag, "-y")) {
+    if (flag[0] != '-') {
         return code_invalid_parametr;
-    } 
-
+    }
+    switch (flag[1]) {
+        case 's':
+        case 'm':
+        case 'h':
+        case 'y':
+            break;
+        default:
+            code_invalid_parametr;
+    }
     struct tm tm_start;
     int day, month, year;
-
     if (sscanf(time_start, "%d:%d:%d", &day, &month, &year) != 3) {
         return code_invalid_parametr;
     }
@@ -173,14 +181,16 @@ status_code get_elapsed_time(char *time_start, char *flag) {
     time_t current_time = time(NULL);
 
     double elapsed_seconds = difftime(current_time, start_time);
-
-    if (strcmp(flag, "-s") == 0) {
+    if (elapsed_seconds < 0) {
+        return code_invalid_parametr;
+    }
+    if (flag[1] == 's') {
         printf("Elapsed time in seconds: %.0f\n", elapsed_seconds);
-    } else if (strcmp(flag, "-m") == 0) {
+    } else if (flag[1] == 'm') {
         printf("Elapsed time in minutes: %.2f\n", elapsed_seconds / 60.0);
-    } else if (strcmp(flag, "-h") == 0) {
+    } else if (flag[1] == 'h') {
         printf("Elapsed time in hours: %.2f\n", elapsed_seconds / 3600.0);
-    } else if (strcmp(flag, "-y") == 0) {
+    } else if (flag[1] == 'y') {
         printf("Elapsed time in years: %.4f\n", elapsed_seconds / (365.25 * 24 * 3600));
     }
     return code_succes;

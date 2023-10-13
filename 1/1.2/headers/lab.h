@@ -8,6 +8,7 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
+#include <stdarg.h>
 #define MAX_PINCODE 100000
 #define STR_SIZE 256
 
@@ -31,17 +32,17 @@ typedef struct User {
 } User;
 
 typedef struct Node { 
-    User data;
+    User* data;
     struct Node* next;
     struct Node* prev;
 } Node;
 
 status_code_register register_user(Node** head, User* person);
-status_code_register find_user(Node* list, const char* log, int pin);
+status_code_register find_user(Node* list, const char* log, int pin, User* user);
 status_code destroy_storage(Node** head);
 status_code create_user(const char* log, int pin, User** person);
 status_code make_sanctions(Node* list, const char* log, char* number);
-status_code get_elapsed_time(char *time_start, char *flag);
+status_code get_elapsed_time(char* time_start, char *flag);
 void print_menu_non_authorized();
 void print_menu_authorized();
 void get_time();
