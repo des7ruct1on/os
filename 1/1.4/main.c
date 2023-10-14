@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     fwrite(bytes, sizeof(unsigned char), sizeof(bytes) / sizeof(bytes[0]), file);
     fclose(file);
     int answer;
-    status_cmd cmd = command(&mask_hex, argv, argc);
+    status_cmd cmd = command(argv, argc);
     status_code st_xor8, st_xor32, st_mask;
     switch (cmd) {
         case cmd_error_malloc:
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
                 exit(3);
             }
         case cmd_mask:
-            st_mask = mask(filename, mask_hex, &answer);
+            st_mask = mask(filename, argv[3], &answer);
             if (st_mask != code_error_opening_file) {
                 printf("res = %d\n", answer);
                 break;

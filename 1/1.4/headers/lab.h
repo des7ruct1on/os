@@ -28,6 +28,6 @@ typedef enum status_cmd {
 status_code xor8(const char* file_path, int* answer);
 status_code xor32(const char* file_path, int* answer);
 status_code mask(const char* file_path, char* mask_hex, int* answer);
-status_cmd command(char** arg_one, char* argv[], int argc);
+status_cmd command(char* argv[], int argc);
 
 #endif
