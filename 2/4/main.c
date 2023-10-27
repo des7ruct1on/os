@@ -90,7 +90,6 @@ status_code get_names(char*** names, FILE* in, int* capacity_names) {
                     (*capacity_names) *= 2;
                     status_realloc st_realloc = my_realloc(names, *capacity_names);
                     if (st_realloc == status_realloc_fail) {
-                        printf("Error realloc detected!!!\n");
                         free(tmp);
                         free(*names);
                         return code_alloc_error;
@@ -116,7 +115,6 @@ status_code get_names(char*** names, FILE* in, int* capacity_names) {
                 capacity_row *= 2;
                 status_realloc st_realloc = my_realloc(&tmp, capacity_row);
                 if (st_realloc == status_realloc_fail) {
-                    printf("Error realloc detected!!!\n");
                     free(tmp);
                     free(*names);
                     return code_alloc_error;
@@ -163,10 +161,12 @@ int main(int argc, char *argv[]) {
             if (st_find == code_error_opening_file) {
                 printf("Can`t open file: %s!\n", current_file);
                 fclose(f_names);
+                free(names);
                 return -3;
             } else if (st_find == code_invalid_parameter) {
                 printf("Invalid parameter detected!!!\n");
                 fclose(f_names);
+                free(names);
                 return -4;
             }
             if (index_line != -1) {
@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-
+    free(names);
     fclose(f_names);
 
     return 0;
