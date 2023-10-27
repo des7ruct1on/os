@@ -34,7 +34,10 @@ status_code find_substring(const char *file_path, const char *substring, size_t*
     if (file == NULL) {
         return code_error_opening_file;
     }
-
+    if (feof(file)) {
+        *index_line = -1;
+        return code_success;
+    }
     char *buffer = NULL;
     *index_line = 1;
     int read;
@@ -56,6 +59,77 @@ status_code find_substring(const char *file_path, const char *substring, size_t*
     return code_success;
 }
 
+status_code get_names(char*** names, FILE* in, int* capacity_names) {
+    if (feof(in)) {
+        return code_success;
+    }
+    *capacity_names = 32;
+    int capacity_row = 32;
+    int index_name = 0;
+    int index_row = 0;
+    *names = (char**)malloc((*capacity_names) * sizeof(char*));
+    if (*names == NULL) {
+        return code_alloc_error;
+    }
+    char c;
+    c = fgetc(in);
+    char* tmp = (char*)malloc(sizeof(char) * capacity_row);
+    if (!tmp) {
+        free(*names);
+        return code_alloc_error;
+    }
+    bool started = false;
+    while (true) {
+        if (isspace(c) || c == '\n' || c == EOF) {
+            if (started) {
+                started = false;
+                tmp[index_row] = '\0';
+                (*names)[index_name] = strdup(tmp);
+                index_name++;
+                if (index_name == *capacity_names - 1) {
+                    (*capacity_names) *= 2;
+                    status_realloc st_realloc = my_realloc(names, *capacity_names);
+                    if (st_realloc == status_realloc_fail) {
+                        printf("Error realloc detected!!!\n");
+                        free(tmp);
+                        free(*names);
+                        return code_alloc_error;
+                    }
+                }
+                free(tmp);
+                tmp = (char*)malloc(sizeof(char) * capacity_row);
+                if (!tmp) {
+                    free(*names);
+                    return code_alloc_error;
+                }
+                index_row = 0;
+                if (c == EOF) {
+                    break;
+                }
+            }
+            c = fgetc(in);
+        } else if (!isspace(c)) {
+            started = true;
+            tmp[index_row] = c;
+            index_row++;
+            if (index_row == capacity_row - 1) {
+                capacity_row *= 2;
+                status_realloc st_realloc = my_realloc(&tmp, capacity_row);
+                if (st_realloc == status_realloc_fail) {
+                    printf("Error realloc detected!!!\n");
+                    free(tmp);
+                    free(*names);
+                    return code_alloc_error;
+                }
+            }
+            c = fgetc(in);
+        }
+    }
+    free(tmp);
+    *capacity_names = index_name;
+    return code_success;
+}
+
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         printf("Your program must start with: %s <file_names> <substring>\n", argv[0]);
@@ -70,82 +144,41 @@ int main(int argc, char *argv[]) {
         return -2;
     }
     int capacity = 32;
-    char* tmp_file_name = malloc(sizeof(char) * capacity);
-    if (!tmp_file_name) {
-        printf("Error malloc detected!!!\n");
+    char** names = NULL;
+    status_code st_read_names = get_names(&names, f_names, &capacity);
+    if (st_read_names == code_alloc_error) {
+        free(names);
+        printf("Error alloc detected!!!\n");
         fclose(f_names);
-        return -7;
+        return -3;
     }
-    int index = 0;
-    char c;
     pid_t pid;
-    bool start = true;
-    status_realloc st_realloc;
-    while (!feof(f_names)) {
-        c = fgetc(f_names);
-        if (c == EOF || feof(f_names)) {
-            break;
-        }
-        while (isspace(c)) {
-            c = fgetc(f_names);
-        }
-        while (!isspace(c)) {
-            tmp_file_name[index] = c;
-            index++;
-            if (index == capacity - 1) {
-                capacity *= 2;
-                st_realloc = my_realloc(&tmp_file_name, capacity);
-                if (st_realloc == status_realloc_fail) {
-                    printf("Error realloc detected!!!\n");
-                    free(tmp_file_name);
-                    fclose(f_names);
-                    return -5;
-
-                }
-            }
-            c = fgetc(f_names);
-            if (c == EOF) {
-                break;
-            }
-        }
-        tmp_file_name[index] = '\0';
-        index = 0;
-        size_t index_row, index_line;
+    int count = 0;
+    for (int i = 0; i < capacity; i++) {
+        char* current_file = names[i];
         pid = fork();
         if (pid == 0) {
-            status_code st_find = find_substring(tmp_file_name, substring, &index_row, &index_line);
+            size_t index_row, index_line;
+            status_code st_find = find_substring(current_file, substring, &index_row, &index_line);
             if (st_find == code_error_opening_file) {
-                printf("Can`t open file: %s!\n", tmp_file_name);
-                free(tmp_file_name);
+                printf("Can`t open file: %s!\n", current_file);
                 fclose(f_names);
                 return -3;
             } else if (st_find == code_invalid_parameter) {
                 printf("Invalid parameter detected!!!\n");
-                free(tmp_file_name);
                 fclose(f_names);
                 return -4;
             }
             if (index_line != -1) {
-                printf("%s found at %ld pos, at %ld line in %s\n", substring, index_row, index_line, tmp_file_name);
+                printf("%s found at %ld pos, at %ld line in %s\n", substring, index_row, index_line, current_file);
             } else {
-                printf("%s has not %s\n", tmp_file_name, substring);
+                printf("%s has not %s\n", current_file, substring);
             }
             exit(0);
         } else if (pid == -1) {
-            free(tmp_file_name);
-            tmp_file_name = NULL;
             exit(-1);
         } else {
-            if (feof(f_names)) {
-                free(tmp_file_name);
-                break;
-            }
-            free(tmp_file_name);
-            tmp_file_name = NULL; 
-            capacity = 32;
-            index = 0;
-            tmp_file_name = malloc(sizeof(char) * capacity);
-            if (!tmp_file_name) {
+            if (!current_file) {
                 printf("Error malloc detected!!!\n");
                 fclose(f_names);
                 return -7;
