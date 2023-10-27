@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <unistd.h>
 #include <stdbool.h>
 
@@ -8,7 +7,6 @@
 
 pthread_t philosophers[NUM_PHILOSOPHERS];
 pthread_mutex_t forks[NUM_PHILOSOPHERS];
-sem_t semaphore;
 
 void *philosopher(void *id) {
     int philosopher_id = *((int *)id);
@@ -20,12 +18,10 @@ void *philosopher(void *id) {
         printf("Philosopher %d is thinking.\n", philosopher_id);
         usleep(1000000); // Sleep for 1 second
 
-        // Wait for available forks
-        sem_wait(&semaphore);
-
         // Pick up left fork
         pthread_mutex_lock(&forks[left_fork]);
         printf("Philosopher %d picked up left fork (%d).\n", philosopher_id, left_fork);
+        usleep(500000); // Sleep for 0.5 second
 
         // Pick up right fork
         pthread_mutex_lock(&forks[right_fork]);
@@ -42,15 +38,12 @@ void *philosopher(void *id) {
         // Put down left fork
         pthread_mutex_unlock(&forks[left_fork]);
         printf("Philosopher %d put down left fork (%d).\n", philosopher_id, left_fork);
-
-        // Signal that forks are available
-        sem_post(&semaphore);
     }
 
     return NULL;
 }
 
-int main(int argc, char* argv[]) {
+int main() {
     int i;
     int philosopher_ids[NUM_PHILOSOPHERS];
 
@@ -59,25 +52,21 @@ int main(int argc, char* argv[]) {
         pthread_mutex_init(&forks[i], NULL);
     }
 
-    // Initialize semaphore
-    sem_init(&semaphore, 0, NUM_PHILOSOPHERS - 1);
-
     // Create philosopher threads
     for (i = 0; i < NUM_PHILOSOPHERS; i++) {
         philosopher_ids[i] = i;
         pthread_create(&philosophers[i], NULL, philosopher, (void *)&philosopher_ids[i]);
     }
 
-    // Wait for philosopher threads to finish
+    // Wait for philosopher threads to finish (This will never happen)
     for (i = 0; i < NUM_PHILOSOPHERS; i++) {
         pthread_join(philosophers[i], NULL);
     }
 
-    // Destroy mutexes and semaphore
+    // Destroy mutexes
     for (i = 0; i < NUM_PHILOSOPHERS; i++) {
         pthread_mutex_destroy(&forks[i]);
     }
-    sem_destroy(&semaphore);
 
     return 0;
 }
